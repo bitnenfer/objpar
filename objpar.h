@@ -433,11 +433,11 @@ int objpar_face(const char* p_string, unsigned int* p_index, unsigned int string
             }
             if (str_size > 0)
             {
-				if (comp_offset >= 3)
-				{
-					/* Meshes need to be triangulated */
-					return 0;
-				}
+                if (comp_offset >= 3)
+                {
+                    /* Meshes need to be triangulated */
+                    return 0;
+                }
                 str[str_size] = 0;
                 p_f[(comp_count * 3) + comp_offset] = atoi(str); /* TODO: implement custom atoi */
             }
@@ -447,14 +447,14 @@ int objpar_face(const char* p_string, unsigned int* p_index, unsigned int string
                 comp_offset += 1;
                 comp_count = 0;
                 if (c0 != '\n')
-					c0 = p_string[++index];
+                    c0 = p_string[++index];
             }
             else if (c0 == ' ' && comp_count < 2)
             {
                 comp_offset += 1;
                 comp_count = 0;
                 if (c0 != '\n')
-					c0 = p_string[++index];
+                    c0 = p_string[++index];
             }
             else if (c0 != '\n')
                 c0 = p_string[++index];
