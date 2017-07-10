@@ -26,8 +26,8 @@ int main()
     unsigned int mesh_index;
     char* files[4];
 
-    files[0] = "data/cube_nontri.obj";
-    files[1] = "data/cube.obj";
+    files[0] = "data/cube.obj";
+    files[1] = "data/cube_nontri.obj";
     files[2] = "data/monkey.obj";
     files[3] = "data/teapot.obj";
 
@@ -117,9 +117,9 @@ int main()
             putc('\t', stdout);
             for (j = 0; j < mesh.face_width * 3; j += 3)
             {
-                unsigned int v = mesh.p_faces[index + j + 0];
-                unsigned int vt = mesh.p_faces[index + j + 1];
-                unsigned int vn = mesh.p_faces[index + j + 2];
+                unsigned int v = mesh.p_faces[index + j + OBJPAR_V_IDX];
+                unsigned int vn = mesh.p_faces[index + j + OBJPAR_VN_IDX];
+                unsigned int vt = mesh.p_faces[index + j + OBJPAR_VT_IDX];
 
                 printf("%u/%u/%u\t", v, vt, vn);
             }

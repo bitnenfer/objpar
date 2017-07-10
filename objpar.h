@@ -10,8 +10,12 @@
 * ======
 *
 * Simple Wavefront OBJ parser.
-* For use it only requires defining op_malloc and op_free. If not
-* it will fallback to stdlib malloc/free.
+* 
+* Currently it depends on stdlib's atoi and atof. You can provide your own implementation
+* by doing 
+*
+* `#define objpar_atoi my_atoi`
+* `#define objpar_atof my_atof`
 *
 * For now it only supports:
 * - Geometric Vertices.
@@ -38,16 +42,19 @@
 #define objpar_atof (float)atof
 #endif
 
+#define OBJPAR_V_IDX 0
+#define OBJPAR_VT_IDX 1
+#define OBJPAR_VN_IDX 2
 #define objpar_get_size(string, string_size) objpar(string, string_size, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)
 
 /* Declaration */
 unsigned int objpar(const char* p_string, unsigned int string_size, void* p_buffer, float** pp_vertices, float** pp_normals, float** pp_texcoords, unsigned int** pp_faces, unsigned int* p_vertex_count, unsigned int* p_normal_count, unsigned int* p_texcoord_count, unsigned int* p_face_count, unsigned int* p_vertex_width, unsigned int* p_normal_width, unsigned int* p_texcoord_width, unsigned int* p_face_width);
-unsigned int objpar_v(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_vbuff, unsigned int vertex_width);
-unsigned int objpar_vn(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_nbuff, unsigned int normal_width);
-unsigned int objpar_vt(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_tbuff, unsigned int texcoord_width);
-unsigned int objpar_f(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int** pp_fbuff, unsigned int face_width);
-unsigned int objpar_comment(const char* p_string, unsigned int* p_index, unsigned int string_size);
-unsigned int objpar_newline(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int* p_space_count);
+unsigned int objpar__v(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_vbuff, unsigned int vertex_width);
+unsigned int objpar__vn(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_nbuff, unsigned int normal_width);
+unsigned int objpar__vt(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_tbuff, unsigned int texcoord_width);
+unsigned int objpar__f(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int** pp_fbuff, unsigned int face_width);
+unsigned int objpar__comment(const char* p_string, unsigned int* p_index, unsigned int string_size);
+unsigned int objpar__newline(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int* p_space_count);
 
 /* Definition */
 unsigned int objpar(const char* p_string, unsigned int string_size, void* p_buffer, float** pp_vertices, float** pp_normals, float** pp_texcoords, unsigned int** pp_faces, unsigned int* p_vertex_count, unsigned int* p_normal_count, unsigned int* p_texcoord_count, unsigned int* p_face_count, unsigned int* p_vertex_width, unsigned int* p_normal_width, unsigned int* p_texcoord_width, unsigned int* p_face_width)
@@ -66,6 +73,7 @@ unsigned int objpar(const char* p_string, unsigned int string_size, void* p_buff
     unsigned int texcoord_buffer_size;
     unsigned int face_buffer_size;
     unsigned int total_buffer_size;
+    unsigned int face_comp_count;
     float* p_vertices;
     float* p_normals;
     float* p_texcoords;
@@ -82,6 +90,7 @@ unsigned int objpar(const char* p_string, unsigned int string_size, void* p_buff
     texcoord_width = 0;
     face_width= 0;
     total_buffer_size = 0;
+    face_comp_count = 3;
     p_vertices = NULL;
     p_normals = NULL;
     p_texcoords = NULL;
@@ -93,34 +102,34 @@ unsigned int objpar(const char* p_string, unsigned int string_size, void* p_buff
     {
         unsigned int count;
 
-        if ((count = objpar_v(p_string, &index, string_size, NULL, 0)))
+        if ((count = objpar__v(p_string, &index, string_size, NULL, 0)))
         {
             vertex_count += 1;
             vertex_width = count;
         }
-        else if ((count = objpar_vn(p_string, &index, string_size, NULL, 0)))
+        else if ((count = objpar__vn(p_string, &index, string_size, NULL, 0)))
         {
             normal_count += 1;
             normal_width = count;
         }
-        else if ((count = objpar_vt(p_string, &index, string_size, NULL, 0)))
+        else if ((count = objpar__vt(p_string, &index, string_size, NULL, 0)))
         {
             texcoord_count += 1;
             texcoord_width = count;
         }
-        else if ((count = objpar_f(p_string, &index, string_size, NULL, 0)))
+        else if ((count = objpar__f(p_string, &index, string_size, NULL, 0)))
         {
             face_count += 1;
             face_width = count;
         }
-        else if (objpar_comment(p_string, &index, string_size));
-        else objpar_newline(p_string, &index, string_size, 0);
+        else if (objpar__comment(p_string, &index, string_size));
+        else objpar__newline(p_string, &index, string_size, 0);
     }
 
     vertex_buffer_size = (sizeof(float) * vertex_width) * vertex_count;
     normal_buffer_size = (sizeof(float) * normal_width) * normal_count;
     texcoord_buffer_size = (sizeof(float) * texcoord_width) * texcoord_count;
-    face_buffer_size = ((sizeof(unsigned int) * 3) * face_width) * face_count;
+    face_buffer_size = ((sizeof(unsigned int) * face_comp_count) * face_width) * face_count;
 
     total_buffer_size = (vertex_buffer_size + normal_buffer_size + texcoord_buffer_size + face_buffer_size);
 
@@ -190,17 +199,17 @@ unsigned int objpar(const char* p_string, unsigned int string_size, void* p_buff
 
     while (index < string_size)
     {
-        if (objpar_v(p_string, &index, string_size, &p_vertices, vertex_width));
-        else if (objpar_vn(p_string, &index, string_size, &p_normals, normal_width));
-        else if (objpar_vt(p_string, &index, string_size, &p_texcoords, texcoord_width));
-        else if (objpar_f(p_string, &index, string_size, &p_faces, face_width));
-        else if (objpar_comment(p_string, &index, string_size));
-        else objpar_newline(p_string, &index, string_size, NULL);
+        if (objpar__v(p_string, &index, string_size, &p_vertices, vertex_width));
+        else if (objpar__vn(p_string, &index, string_size, &p_normals, normal_width));
+        else if (objpar__vt(p_string, &index, string_size, &p_texcoords, texcoord_width));
+        else if (objpar__f(p_string, &index, string_size, &p_faces, face_width));
+        else if (objpar__comment(p_string, &index, string_size));
+        else objpar__newline(p_string, &index, string_size, NULL);
     }
     return 1;
 }
 
-unsigned int objpar_v(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_vbuff, unsigned int vertex_width)
+unsigned int objpar__v(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_vbuff, unsigned int vertex_width)
 {
     char str[32];
     unsigned int index;
@@ -220,7 +229,7 @@ unsigned int objpar_v(const char* p_string, unsigned int* p_index, unsigned int 
         if (pp_vbuff == NULL)
         {
             unsigned int space_count = 0;
-            objpar_newline(p_string, p_index, string_size, &space_count);
+            objpar__newline(p_string, p_index, string_size, &space_count);
             return space_count;
         }
 
@@ -261,7 +270,7 @@ unsigned int objpar_v(const char* p_string, unsigned int* p_index, unsigned int 
     return 0;
 }
 
-unsigned int objpar_vn(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_nbuff, unsigned int normal_width)
+unsigned int objpar__vn(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_nbuff, unsigned int normal_width)
 {
     char str[32];
     unsigned int index;
@@ -281,7 +290,7 @@ unsigned int objpar_vn(const char* p_string, unsigned int* p_index, unsigned int
         if (pp_nbuff == NULL)
         {
             unsigned int space_count = 0;
-            objpar_newline(p_string, p_index, string_size, &space_count);
+            objpar__newline(p_string, p_index, string_size, &space_count);
             return space_count;
         }
 
@@ -322,7 +331,7 @@ unsigned int objpar_vn(const char* p_string, unsigned int* p_index, unsigned int
     return 0;
 }
 
-unsigned int objpar_vt(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_tbuff, unsigned int texcoord_width)
+unsigned int objpar__vt(const char* p_string, unsigned int* p_index, unsigned int string_size, float** pp_tbuff, unsigned int texcoord_width)
 {
     char str[32];
     unsigned int index;
@@ -342,7 +351,7 @@ unsigned int objpar_vt(const char* p_string, unsigned int* p_index, unsigned int
         if (pp_tbuff == NULL)
         {
             unsigned int space_count = 0;
-            objpar_newline(p_string, p_index, string_size, &space_count);
+            objpar__newline(p_string, p_index, string_size, &space_count);
             return space_count;
         }
 
@@ -383,13 +392,14 @@ unsigned int objpar_vt(const char* p_string, unsigned int* p_index, unsigned int
     return 0;
 }
 
-unsigned int objpar_f(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int** pp_fbuff, unsigned int face_width)
+unsigned int objpar__f(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int** pp_fbuff, unsigned int face_width)
 {
     char str[32];
     unsigned int index;
     unsigned int comp_count;
     unsigned int comp_offset;
     unsigned int str_size;
+    unsigned int face_comp_count;
     unsigned int i;
     char c0;
     char c1;
@@ -398,13 +408,15 @@ unsigned int objpar_f(const char* p_string, unsigned int* p_index, unsigned int 
     index = *p_index;
     c0 = p_string[index];
     c1 = p_string[index + 1];
-
+    face_comp_count = 3;
     if (c0 == 'f' && c1 == ' ')
     {
         if (pp_fbuff == NULL)
         {
             unsigned int space_count = 0;
-            objpar_newline(p_string, p_index, string_size, &space_count);
+            objpar__newline(p_string, p_index, string_size, &space_count);
+            if (space_count < 3)
+                space_count = 3;
             return space_count;
         }
 
@@ -415,7 +427,7 @@ unsigned int objpar_f(const char* p_string, unsigned int* p_index, unsigned int 
 
         index += 2;
 
-        for (i = 0; i < face_width * 3; i += 3)
+        for (i = 0; i < face_width * face_comp_count; i += 3)
         {
             p_face[i + 0] = 0;
             p_face[i + 1] = 0;
@@ -437,7 +449,7 @@ unsigned int objpar_f(const char* p_string, unsigned int* p_index, unsigned int 
                 str_size = str_size;
             }
             comp_count += 1;
-            if (c0 != '/' && comp_count % 3 != 0 && comp_count < face_width * 3)
+            if (c0 != '/' && comp_count % 3 != 0 && comp_count < face_width * face_comp_count)
             {
                 comp_count += 2;
                 c0 = p_string[++index];
@@ -447,13 +459,13 @@ unsigned int objpar_f(const char* p_string, unsigned int* p_index, unsigned int 
             str_size = 0;
         }
         *p_index = index;
-        *pp_fbuff = p_face + (face_width * 3);
+        *pp_fbuff = p_face + (face_width * face_comp_count);
         return 1;
     }
     return 0;
 }
 
-unsigned int objpar_comment(const char* p_string, unsigned int* p_index, unsigned int string_size)
+unsigned int objpar__comment(const char* p_string, unsigned int* p_index, unsigned int string_size)
 {
     unsigned int index;
     char c;
@@ -473,7 +485,7 @@ unsigned int objpar_comment(const char* p_string, unsigned int* p_index, unsigne
     return 0;
 }
 
-unsigned int objpar_newline(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int* p_space_count)
+unsigned int objpar__newline(const char* p_string, unsigned int* p_index, unsigned int string_size, unsigned int* p_space_count)
 {
     unsigned int index;
     unsigned int space_count;
