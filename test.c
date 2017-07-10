@@ -1,69 +1,134 @@
+#include "objpar.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "objpar.h"
 
 void* open_file(const char* p_file_name, size_t* p_file_size);
+
+typedef struct simple_mesh
+{
+    float* p_vertices;
+    float* p_normals;
+    float* p_texcoords;
+    unsigned int* p_faces;
+    unsigned int vertex_count;
+    unsigned int normal_count;
+    unsigned int texcoord_count;
+    unsigned int face_count;
+    unsigned int vertex_width;
+    unsigned int normal_width;
+    unsigned int texcoord_width;
+    unsigned int face_width;
+} simple_mesh_t;
 
 int main()
 {
     unsigned int mesh_index;
-    char* files[3];
+    char* files[4];
 
-    files[0] = "data/cube.obj";
-    files[1] = "data/monkey.obj";
-    files[2] = "data/teapot.obj";
+    files[0] = "data/cube_nontri.obj";
+    files[1] = "data/cube.obj";
+    files[2] = "data/monkey.obj";
+    files[3] = "data/teapot.obj";
 
-    for (mesh_index = 0; mesh_index < 3; ++mesh_index)
+    for (mesh_index = 0; mesh_index < 4; ++mesh_index)
     {
         void* p_data;
-        op_objmesh_t mesh;
+        void* p_buffer;
         unsigned int index;
         size_t file_size;
+        simple_mesh_t mesh;
+
         p_data = open_file(files[mesh_index], &file_size);
-        objpar(p_data, file_size, &mesh);
+        /* We need to know the size of the buffer used for 
+           storing the data. For that we use objpar_get_size */
+        p_buffer = malloc(objpar_get_size(p_data, file_size));
+        
+        /* objpar doesn't define any struct. It only uses integral type
+           You must provide pointers to the different properties supported
+           by objpar. */
+        objpar(
+            p_data, 
+            file_size,
+            p_buffer,
+            &mesh.p_vertices,
+            &mesh.p_normals,
+            &mesh.p_texcoords,
+            &mesh.p_faces,
+            &mesh.vertex_count,
+            &mesh.normal_count,
+            &mesh.texcoord_count,
+            &mesh.face_count,
+            &mesh.vertex_width,
+            &mesh.normal_width,
+            &mesh.texcoord_width,
+            &mesh.face_width);
+
         free(p_data);
 
-        printf("Geometry Vertices Count: %u\n", mesh.geo_vert_count);
-        printf("Vertex Normals Count: %u\n", mesh.nor_vert_count);
-        printf("Texture Vertices Count: %u\n", mesh.tex_vert_count);
-        printf("Faces Count: %u\n\n", mesh.face_count);
-
+        printf("Geometry Vertices Count: %u\n", mesh.vertex_count);
+        printf("Vertex Normals Count: %u\n", mesh.normal_count);
+        printf("Texture Vertices Count: %u\n", mesh.texcoord_count);
+        printf("Face Count: %u\n\n", mesh.face_count);
+        
         printf("Geometry Vertices:\n");
-        for (index = 0; index < mesh.geo_vert_count; ++index)
+        for (index = 0; index < mesh.vertex_count * mesh.vertex_width; index += mesh.vertex_width)
         {
-            op_vec4f_t v = mesh.p_geo_vert[index];
-            printf("\t%f\t%f\t%f\t%f\n", v.x, v.y, v.z, v.w);
+            unsigned int j;
+            putc('\t', stdout);
+            for (j = 0; j < mesh.vertex_width; ++j)
+            {
+                float v = mesh.p_vertices[index + j];
+                printf("%f\t", v);
+            }
+            putc('\n', stdout);
         }
 
         printf("\nVertex Normals:\n");
-        for (index = 0; index < mesh.nor_vert_count; ++index)
+        for (index = 0; index < mesh.normal_count * mesh.normal_width; index += mesh.normal_width)
         {
-            op_vec3f_t v = mesh.p_nor_vert[index];
-            printf("\t%f\t%f\t%f\n", v.x, v.y, v.z);
+            unsigned int j;
+            putc('\t', stdout);
+            for (j = 0; j < mesh.normal_width; ++j)
+            {
+                float v = mesh.p_normals[index + j];
+                printf("%f\t", v);
+            }
+            putc('\n', stdout);
         }
 
         printf("\nTexture Vertices:\n");
-        for (index = 0; index < mesh.tex_vert_count; ++index)
+        for (index = 0; index < mesh.texcoord_count * mesh.texcoord_width; index += mesh.texcoord_width)
         {
-            op_vec3f_t v = mesh.p_tex_vert[index];
-            printf("\t%f\t%f\t%f\n", v.x, v.y, v.z);
+            unsigned int j;
+            putc('\t', stdout);
+            for (j = 0; j < mesh.texcoord_width; ++j)
+            {
+                float v = mesh.p_texcoords[index + j];
+                printf("%f\t", v);
+            }
+            putc('\n', stdout);
         }
 
         printf("\nFaces:\n");
-        for (index = 0; index < mesh.face_count; ++index)
+        for (index = 0; index < mesh.face_count * mesh.face_width * 3; index += mesh.face_width * 3)
         {
-            op_face_t f = mesh.p_faces[index];
-            printf("\t%u|%u|%u %u|%u|%u %u|%u|%u\n",
-                   f.v[0], f.vt[0], f.vn[0],
-                   f.v[1], f.vt[1], f.vn[1],
-                   f.v[2], f.vt[2], f.vn[2]
-            );
+            unsigned int j;
+            putc('\t', stdout);
+            for (j = 0; j < mesh.face_width * 3; j += 3)
+            {
+                unsigned int v = mesh.p_faces[index + j + 0];
+                unsigned int vt = mesh.p_faces[index + j + 1];
+                unsigned int vn = mesh.p_faces[index + j + 2];
+
+                printf("%u/%u/%u\t", v, vt, vn);
+            }
+            putc('\n', stdout);
+
         }
-
-        objpar_free(&mesh);
+        free(p_buffer);
     }
-
+    getchar();
     return 0;
 }
 

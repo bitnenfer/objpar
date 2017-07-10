@@ -1,15 +1,19 @@
 objpar
 ======
 
-Simple Wavefront OBJ parser.
-For use it only requires defining op_malloc and op_free. If not
-it will fallback to stdlib malloc/free.
+Single header Wavefront OBJ parser.
+ 
+Currently it depends on stdlib's atoi and atof. You can provide your own implementation
+by doing 
 
-For now it only supports:
-- Geometric Vertices.
-- Vertex Normals.
-- Texture Vertices
-- Faces
+`#define objpar_atoi my_atoi`
+`#define objpar_atof my_atof`
+
+ For now it only supports:
+ - Geometric Vertices.
+ - Vertex Normals.
+ - Texture Vertices
+ - Faces
 
 Repo: [https://github.com/bitnenfer/objpar/](https://github.com/bitnenfer/objpar/)
 
