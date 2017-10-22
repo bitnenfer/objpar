@@ -3,20 +3,22 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#define ARRAYSIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 void* open_file(const char* p_file_name, size_t* p_file_size);
 
 int main()
 {
     unsigned int mesh_index;
-    char* files[5];
+    char* files[] = {
+        "data/plane.obj",
+        "data/cube.obj",
+        "data/cube_nontri.obj",
+        "data/monkey.obj",
+        "data/teapot.obj",
+    };
 
-    files[0] = "data/plane.obj";
-    files[1] = "data/cube.obj";
-    files[2] = "data/cube_nontri.obj";
-    files[3] = "data/monkey.obj";
-    files[4] = "data/teapot.obj";
-
-    for (mesh_index = 0; mesh_index < 5; ++mesh_index)
+    for (mesh_index = 0; mesh_index < ARRAYSIZE(files); ++mesh_index)
     {
         void* p_data;
         void* p_buffer;
