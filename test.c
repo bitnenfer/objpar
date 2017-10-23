@@ -15,6 +15,7 @@ int main()
         "data/cube.obj",
         "data/cube_nontri.obj",
         "data/monkey.obj",
+        "data/cube2.obj",
         "data/teapot.obj",
     };
 
